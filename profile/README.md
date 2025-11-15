@@ -1,252 +1,358 @@
-# fullstack-pw: Home Lab Infrastructure & DevOps Platform
+# fullstack-pw: Cloud-Native DevOps Portfolio
 
-This organization houses the infrastructure, services, and applications that make up the **fullstack.pw** homelab environment - a comprehensive, production-grade platform built on Kubernetes for learning, experimentation, and portfolio demonstration.
+Production-grade homelab platform demonstrating enterprise DevOps practices, cloud-native architectures, and infrastructure automation. Built as a comprehensive portfolio showcasing modern software engineering, SRE, and platform engineering capabilities.
 
-## 🌐 Overview
+## Platform Overview
 
-The **fullstack.pw** platform demonstrates modern DevOps practices and cloud-native architectures in a homelab setting, including:
+The fullstack.pw organization encompasses a complete infrastructure and application ecosystem built on Kubernetes, implementing:
 
-- **Multi-environment Kubernetes clusters** (dev, staging, production, home, sandbox, tools)
-- **Infrastructure as Code** (Terraform, Ansible)
-- **GitOps workflows** for continuous deployment
-- **Observability stack** (Prometheus, Grafana, Jaeger, OpenTelemetry)
-- **Self-hosted CI/CD** (GitHub Actions and GitLab CI/CD runners)
-- **Security practices** (Vault, cert-manager, network policies, SOPS)
-- **Custom CI/CD pipelines** (shared workflows for application deployments)
-- **Home automation and media services** (Immich photo management)
+- Multi-environment Kubernetes clusters with automated provisioning and lifecycle management
+- Infrastructure as Code with Terraform modular architecture and Ansible configuration management
+- GitOps-driven continuous deployment with ArgoCD and automated CI/CD pipelines
+- Comprehensive observability using Prometheus, Grafana, Jaeger, Loki, and OpenTelemetry
+- Self-hosted CI/CD infrastructure with GitHub Actions and GitLab runners
+- Defense-in-depth security with Vault, cert-manager, Istio service mesh, and SOPS encryption
+- Automated cluster bootstrapping via commit-triggered workflows
+- Hub-and-spoke telemetry architecture for centralized multi-cluster monitoring
 
-## 🏗️ Architecture
+## Architecture
 
 ![fullstack.pw Architecture](/fullstack.drawio.svg)
 
 ### Physical Infrastructure
 
-The homelab runs on modest but capable hardware:
+**Compute Nodes**
+- NODE01: Acer Nitro (i7-4710HQ, 16GB RAM)
+- NODE02: HP ED800 G3 Mini (i7-7700T, 32GB RAM) with USB-attached storage
+- NODE03: X99 dual Xeon E5-2699-V3 18-Core, 128GB RAM
+- Lenovo Legion: Personal laptop running ephemeral CI/CD runners
 
-- **NODE01** (Acer Nitro, i7-4710HQ, 16GB RAM) - old notebook
-- **NODE02** (HP ED800 G3 Mini, i7-7700T, 32GB RAM) - mini pc with USB storage
-- **NODE03** (X99 2x Xeon E5-2699-V3 2.3Ghz 18-Core, 128GB RAM) - home server
-- **Lenovo Legion** (Personal laptop, running ephemeral CI/CD runners)
+**Virtualization**: Proxmox VE managing 10+ VMs across physical hosts with YAML-driven declarative provisioning
 
-All nodes run Proxmox VE for virtualization, hosting various VMs and Kubernetes clusters.
+### Network Architecture
 
-### Network Design
+- Cloudflare: DNS, CDN, and WAF for public-facing services with automatic DNS record management
+- HAProxy: Load balancer at k8s.fullstack.pw for vanilla Kubernetes traffic distribution
+- Pi-hole: Internal DNS server with ad-blocking for homelab name resolution
+- MetalLB: Bare metal load balancer for Kubernetes LoadBalancer service type
+- External-DNS: Automated DNS record lifecycle management with TXT ownership verification
 
-- **Cloudflare** provides DNS, CDN, and WAF services for public-facing components
-- **HAProxy** load balancer (`k8s.fullstack.pw`) distributes traffic to Kubernetes clusters
-- **Internal DNS** server (PiHole) provides name resolution within the homelab environment
-- **MetalLB** provides internal load balancing services for Kubernetes
+### Kubernetes Cluster Topology
 
-### Kubernetes Clusters
+| Cluster | Distribution | Purpose | Infrastructure | Key Platform Components |
+|---------|--------------|---------|----------------|-------------------------|
+| dev | K3s | Development environment | k8s-dev | Istio service mesh, development workloads |
+| stg | K3s | Pre-production staging | k8s-stg | Staging validation, integration testing |
+| prod | K3s | Production services | k8s-prod | Production applications with HA |
+| tools | K3s | Platform infrastructure | k8s-tools | PostgreSQL, Redis, NATS, Vault, CI/CD runners |
+| home | K3s | Home automation | k8s-home | Immich photo management, media services |
+| observability | K3s | Central telemetry hub | k8s-observability | Prometheus, Grafana, Jaeger, Loki |
+| sandboxy | K3s | Experimental platform | k8s-sandbox | KubeVirt, Longhorn distributed storage |
 
-| Cluster | Type     | Purpose                                  | Node(s)               | Key Workloads                    |
-|---------|----------|------------------------------------------|------------------------|-----------------------------------|
-| Sandbox | K8s      | Central observability and core services  | k01 k02 k03           | Observability stack, Vault, Harbor |
-| Sandboxy| K3s      | Experimental virtualization              | k8s-sandbox           | KubeVirt                         |
-| Dev     | K3s      | Development environment                  | k8s-dev               | Development workloads            |
-| Stg     | K3s      | Staging environment                      | k8s-stg               | Staging workloads                |
-| Prod    | K3s      | Production environment                   | k8s-prod              | Production services              |
-| Runners | K3s      | CI/CD pipeline execution                 | Local (Rancher Desktop)| GitHub/GitLab runners           |
-| Tools   | K3s      | Supporting tools and services            | k8s-tools             | PostgreSQL, Redis, NATS, CI/CD   |
-| Home    | K3s      | Home automation and media                | k8s-home              | Immich photo management          |
-
-## 📁 Key Repositories
+## Repository Organization
 
 ### Infrastructure & Platform
 
-- [**infra**](https://github.com/fullstack-pw/infra): Infrastructure as code (Proxmox, Kubernetes, Terraform)
-- [**pipelines**](https://github.com/fullstack-pw/pipelines): Reusable CI/CD workflows and pipelines
+**[infra](https://github.com/fullstack-pw/infra)**: Complete infrastructure-as-code repository
+- Terraform modules for Proxmox VM provisioning and Kubernetes workload deployment
+- Ansible playbooks for cluster bootstrapping (K3s, vanilla K8s, Talos Linux)
+- 35+ reusable Terraform modules (11 base + 24 application modules)
+- GitHub Actions workflows for automated infrastructure lifecycle
+- SOPS-encrypted secrets management with age encryption
 
-### Applications
+**[pipelines](https://github.com/fullstack-pw/pipelines)**: Centralized CI/CD workflows
+- Reusable GitHub Actions workflows for application deployment
+- Multi-environment Kustomize-based deployment pipelines
+- Security scanning and validation workflows
+- Standardized build and release processes
 
-- [**cks**](https://github.com/fullstack-pw/cks): Certified Kubernetes Security examples and best practices
-- [**demo-apps**](https://github.com/fullstack-pw/demo-apps): Collection of cloud-native demonstration applications
+### Application Repositories
 
-## 🔧 Core Components
+**[demo-apps](https://github.com/fullstack-pw/demo-apps)**: Cloud-native microservices portfolio
+- Go-based microservices with OpenTelemetry instrumentation
+- Multi-environment Kustomize overlays (dev, stg, prod)
+- Full observability stack integration (metrics, logs, traces)
+- ArgoCD GitOps deployment manifests
+- Examples: writer, enqueuer, memorizer microservices
 
-### Infrastructure Layer
+**[cks-backend](https://github.com/fullstack-pw/cks-backend)**: CKS training platform backend
+- Go-based backend implementing cluster pool management for Kubernetes security training
+- KubeVirt integration for VM-based Kubernetes cluster provisioning
+- Snapshot-based restoration achieving sub-second session allocation
+- Unified validation engine supporting resource checks, script execution, and file content validation
+- WebSocket terminal access with deterministic terminal IDs for reconnection
 
-| Component | Description | Repository |
-|-----------|-------------|------------|
-| **Proxmox** | Virtualization platform for homelab nodes | [infra](https://github.com/fullstack-pw/infra) |
-| **Terraform** | Infrastructure as code for VM and K8s resources | [infra](https://github.com/fullstack-pw/infra) |
-| **Ansible** | Configuration management for nodes | [infra](https://github.com/fullstack-pw/infra) |
-| **PXE Boot Server** | Network boot for quick node provisioning | [infra](https://github.com/fullstack-pw/infra) |
+**[cks-frontend](https://github.com/fullstack-pw/cks-frontend)**: CKS training platform frontend
+- Next.js 14 application with browser-based terminal emulation using xterm.js
+- SWR-based state management with optimistic updates
+- Multi-stage Docker build achieving 70% image size reduction via standalone output
+- Admin dashboard for cluster pool and session management
 
-### Kubernetes Platform
+## Platform Components
 
-| Component | Description | Repository |
-|-----------|-------------|------------|
-| **K3s/K8s** | Lightweight and standard Kubernetes distributions | [infra](https://github.com/fullstack-pw/infra) |
-| **Cert Manager** | Certificate automation with Let's Encrypt | [infra](https://github.com/fullstack-pw/infra) |
-| **External DNS** | Dynamic DNS updates for services | [infra](https://github.com/fullstack-pw/infra) |
-| **External Secrets** | Secret management with Vault integration | [infra](https://github.com/fullstack-pw/infra) |
-| **NGINX Ingress** | Kubernetes ingress controller | [infra](https://github.com/fullstack-pw/infra) |
-| **MetalLB** | Load balancing for bare metal K8s | [infra](https://github.com/fullstack-pw/infra) |
-| **KubeVirt** | Virtual machine management on K8s | [infra](https://github.com/fullstack-pw/infra) |
+### Infrastructure Automation
 
-### Storage & Services
+| Component | Technology | Implementation |
+|-----------|-----------|----------------|
+| VM Provisioning | Terraform + Proxmox | YAML-driven declarative VM definitions |
+| Configuration Management | Ansible | Idempotent playbooks with dynamic inventory |
+| State Management | Terraform + MinIO S3 | Remote state with workspace isolation |
+| Network Boot | PXE Boot Server | Rapid bare metal provisioning |
 
-| Service | Purpose | URL | Repository |
-|---------|---------|-----|------------|
-| **MinIO** | S3-compatible object storage | [s3.fullstack.pw](https://s3.fullstack.pw) | [infra](https://github.com/fullstack-pw/infra) |
-| **Registry** | Private Docker registry | [registry.fullstack.pw](https://registry.fullstack.pw) | [infra](https://github.com/fullstack-pw/infra) |
-| **Harbor** | Enterprise container registry | [registry.fullstack.pw](https://registry.fullstack.pw) | [infra](https://github.com/fullstack-pw/infra) |
-| **Vault** | Secret management | [vault.fullstack.pw](https://vault.fullstack.pw) | [infra](https://github.com/fullstack-pw/infra) |
+### Kubernetes Platform Services
 
-### CI/CD System
+| Service | Purpose | Implementation | Access |
+|---------|---------|----------------|--------|
+| cert-manager | Automated TLS certificate management | Let's Encrypt with DNS-01 challenge | Cluster-internal |
+| External-DNS | Dynamic DNS record management | Cloudflare and Pi-hole integration | Cluster-internal |
+| External Secrets | Vault to Kubernetes secret sync | ClusterSecretStore with namespace selector | Cluster-internal |
+| Istio | Service mesh for dev cluster | mTLS, traffic management, observability | Gateway at dev cluster |
+| NGINX Ingress | Ingress controller for other clusters | HTTP/HTTPS routing with TLS termination | Multiple clusters |
+| MetalLB | LoadBalancer for bare metal | Layer 2 mode for service exposure | Vanilla K8s clusters |
+| KubeVirt | Virtual machine orchestration | Nested VMs on Kubernetes | sandboxy cluster |
 
-| Component | Description | Repository |
-|-----------|-------------|------------|
-| **GitHub Actions Runners** | Self-hosted GitHub Actions executor with custom Docker image | [infra](https://github.com/fullstack-pw/infra) |
-| **GitLab Runners** | Self-hosted GitLab CI executor | [infra](https://github.com/fullstack-pw/infra) |
-| **Reusable Workflows** | Shared CI/CD pipeline components | [pipelines](https://github.com/fullstack-pw/pipelines) |
+### Storage & Registry Infrastructure
 
-### Observability Stack (Hub-and-Spoke Model)
+| Service | Technology | Purpose | URL |
+|---------|-----------|---------|-----|
+| MinIO | S3-compatible object storage | Terraform state backend, backups | [s3.fullstack.pw](https://s3.fullstack.pw) |
+| Harbor | Enterprise container registry | Multi-tenant registry with security scanning, image replication | [registry.fullstack.pw](https://registry.fullstack.pw) |
+| Longhorn | Distributed block storage | Persistent volumes for KubeVirt VMs on sandboxy cluster | [longhorn.fullstack.pw](https://longhorn.fullstack.pw) |
 
-#### Central Hub (Sandbox Cluster)
-| Component | Description | URL | Repository |
-|-----------|-------------|-----|------------|
-| **Prometheus** | Metrics collection and storage | [prometheus.fullstack.pw](https://prometheus.fullstack.pw) | [infra](https://github.com/fullstack-pw/infra) |
-| **Grafana** | Metrics visualization and dashboards | [grafana.fullstack.pw](https://grafana.fullstack.pw) | [infra](https://github.com/fullstack-pw/infra) |
-| **Jaeger** | Distributed tracing | [jaeger.fullstack.pw](https://jaeger.fullstack.pw) | [infra](https://github.com/fullstack-pw/infra) |
-| **Loki** | Log aggregation | [loki.fullstack.pw](https://loki.fullstack.pw) | [infra](https://github.com/fullstack-pw/infra) |
-| **OpenTelemetry Collector** | Central telemetry ingestion | [otel-collector.fullstack.pw](https://otel-collector.fullstack.pw) | [infra](https://github.com/fullstack-pw/infra) |
+### Secrets & Security
 
-#### Edge Collectors (All Other Clusters)
-- **OpenTelemetry Collector**: Local trace and metric collection
-- **Fluent Bit**: Log collection and forwarding
-- **Prometheus**: Local metrics collection
-- All forwarding to the central Sandbox cluster
+| Component | Implementation | Purpose | Location |
+|-----------|---------------|---------|----------|
+| HashiCorp Vault | KV v2 engine with K8s auth | Runtime secret storage and distribution | [vault.fullstack.pw](https://vault.fullstack.pw) |
+| External Secrets Operator | ClusterSecretStore | Vault to Kubernetes secret synchronization | All clusters |
+| SOPS + age | Encrypted YAML in Git | Secrets at rest in version control | infra repository |
+| cert-manager | Let's Encrypt automation | TLS certificate lifecycle management | All clusters |
+| Trivy | Security scanner | Container and IaC vulnerability scanning | CI/CD pipelines |
+
+### CI/CD Infrastructure
+
+| Component | Implementation | Deployment |
+|-----------|---------------|------------|
+| GitHub Actions Runners | Actions Runner Controller (ARC) | tools cluster |
+| GitLab Runners | GitLab Runner with Docker executor | tools cluster |
+| Custom Runner Image | Docker image with kubectl, Helm, Terraform, SOPS | Harbor registry |
+| Reusable Workflows | Shared GitHub Actions workflows | [pipelines](https://github.com/fullstack-pw/pipelines) |
+
+### Observability Stack
+
+**Central Hub (Observability Cluster)**
+
+| Component | Version | Purpose | Access |
+|-----------|---------|---------|--------|
+| Prometheus | kube-prometheus-stack v79.0.1 | Multi-cluster metrics aggregation | [prometheus.fullstack.pw](https://prometheus.fullstack.pw) |
+| Grafana | Bundled with kube-prometheus-stack | Unified dashboards and visualization | [grafana.fullstack.pw](https://grafana.fullstack.pw) |
+| Jaeger | v2.57.0 | Distributed tracing backend | [jaeger.fullstack.pw](https://jaeger.fullstack.pw) |
+| Loki | v6.28.0 | Centralized log aggregation | [loki.fullstack.pw](https://loki.fullstack.pw) |
+| OpenTelemetry Collector | v0.33.0 | Central telemetry ingestion and processing | Cluster-internal |
+
+**Edge Collectors (All Other Clusters)**
+
+Deployed via observability-box Terraform module:
+- Prometheus with remote write to central hub
+- Fluent Bit v0.48.9 for log forwarding to Loki
+- OpenTelemetry Collector for trace and metric forwarding
+- Automatic cluster labeling for multi-tenant observability
+
+**Data Flow Architecture**
+```
+Application Pods → ServiceMonitor/PodMonitor → Prometheus (edge)
+                → Fluent Bit → Loki (central)
+                → OTel Collector (edge) → Jaeger (central)
+
+Edge Prometheus → Remote Write → Central Prometheus → Grafana
+```
+
+### Data Services
+
+| Service | Technology | Purpose | Deployment |
+|---------|-----------|---------|------------|
+| PostgreSQL | PostgreSQL 15 with pgvector | Relational database with vector search | tools cluster |
+| Redis | Bitnami Redis chart | Caching and session storage | tools cluster |
+| NATS | NATS with JetStream | Message broker and streaming | tools cluster |
 
 ### Home Services
 
-| Service | Purpose | URL | Repository |
-|---------|---------|-----|------------|
-| **Immich** | Self-hosted photo and video management | [immich.fullstack.pw](https://immich.fullstack.pw) | [infra](https://github.com/fullstack-pw/infra) |
+| Service | Purpose | Technology | Access |
+|---------|---------|-----------|--------|
+| Immich | Self-hosted photo and video management | Container deployment with external storage | [immich.fullstack.pw](https://immich.fullstack.pw) |
 
-## 🚀 CI/CD Pipelines
+## CI/CD Pipeline Architecture
 
-The platform implements a robust CI/CD system with:
+**Build Stage**
+- Conventional commit validation
+- Automated unit and integration testing
+- Container image building with multi-stage Dockerfiles
+- Trivy security scanning (containers and IaC)
+- TruffleHog secret leak detection
+- Image pushing to Harbor/Docker Registry with SHA tagging
 
-1. **Build Stage**
-   - Automated testing and code quality checks
-   - Security scanning with Trivy
-   - Container image building with custom Docker images
-   - Pushing to private registry
+**Deploy Stage**
+- Terraform plan on pull requests with parallel execution
+- Terraform apply on merge with path-based change detection
+- Kustomize overlay selection based on environment
+- ArgoCD application sync with health checks
+- Progressive environment promotion (dev → stg → prod)
+- External Secrets synchronization from Vault
 
-2. **Deploy Stage**
-   - Kustomize-based deployments to multiple environments
-   - Progressive delivery with environment promotion
-   - Configuration management via External Secrets
-   - Automated Terraform operations
+**Test Stage**
+- Infrastructure validation tests
+- End-to-end testing with Cypress
+- Security posture validation
+- SARIF output to GitHub Security tab
 
-3. **Test Stage**
-   - End-to-end testing with Cypress
-   - Infrastructure as Code validation
-   - Security scanning
+**Automation Workflows**
 
-## 🔍 Observability Architecture
+10 GitHub Actions workflows:
+- terraform-plan.yml: Parallel plans for infrastructure changes
+- terraform-apply.yml: Automated infrastructure deployment
+- ansible.yml: VM provisioning via `[ansible PLAYBOOK]` commit tag
+- build.yml: Container image build and push
+- sec-trivy.yml: Vulnerability scanning
+- sec-trufflehog.yml: Secret leak detection
+- conventional-commits.yml: Commit message validation
+- release.yml: Semantic versioning and changelog
+- iac-tests.yml: Infrastructure validation
 
-The platform features comprehensive observability with a hub-and-spoke architecture:
+## DevOps Practices Demonstrated
 
-```
-[Edge Clusters] → [observability-box] → [Central Sandbox] → [observability stack]
-(dev/stg/prod/tools/home)              (Jaeger/Prometheus/Loki/Grafana)
-```
+**Infrastructure as Code**
+- Two-tier Terraform module architecture for composability and reusability
+- YAML-driven VM provisioning with dynamic resource creation
+- Automated state backup to Oracle Cloud Object Storage
+- Workspace-based environment isolation
 
-- **Metrics**: Prometheus for infrastructure and application metrics
-- **Logging**: Loki with Fluent Bit for log aggregation and analysis
-- **Tracing**: Distributed tracing with Jaeger and OpenTelemetry
-- **Dashboards**: Grafana dashboards for visualization
+**GitOps Methodology**
+- Git as single source of truth for all infrastructure
+- ArgoCD with app-of-apps pattern and sync waves
+- Automated drift detection and remediation
+- Pull request-based change management with automated validation
 
-## 🛡️ Security
+**Continuous Observability**
+- Hub-and-spoke telemetry architecture
+- OpenTelemetry instrumentation in applications
+- Distributed tracing with correlation across services
+- Custom dashboards and alerting rules (PostgreSQL, Redis, NATS)
+- Structured JSON logging with trace context
 
-Security measures implemented in the platform include:
+**Security Best Practices**
+- Multi-layered secrets management (SOPS → Vault → External Secrets)
+- Automated TLS certificate lifecycle
+- Service mesh with mTLS capability
+- Continuous vulnerability scanning
+- Least-privilege RBAC and Vault policies
+- Non-root container execution
 
-- **Secret Management**: HashiCorp Vault with Kubernetes integration
-- **Secret Encryption**: SOPS with age encryption for GitOps
-- **Certificate Management**: Automated TLS with cert-manager and Let's Encrypt
-- **Authentication**: Role-based access control (RBAC) for Kubernetes resources
-- **Network Security**: Firewall rules and network policies
-- **Vulnerability Scanning**: Trivy for container and IaC scanning
+**Automation & Self-Service**
+- Single-commit VM-to-Kubernetes provisioning workflow
+- Automated cluster bootstrapping with kubeconfig integration
+- Self-healing via Kubernetes probes and ArgoCD sync
+- Automated DNS and certificate management
 
-## 🧪 Example Applications
+**Resilience & Recovery**
+- Multi-cluster architecture for blast radius isolation
+- Automated backup strategies (state, databases, storage)
+- Complete infrastructure reproducible from Git
+- High availability with replica distribution
+- Disaster recovery procedures documented
 
-The platform hosts several example applications to demonstrate its capabilities:
+## Module Architecture
 
-- [**CKS (Certified Kubernetes Security)**](https://github.com/fullstack-pw/cks): Kubernetes security best practices and examples
-  - Security implementations and CKS exam preparation materials
-  - Demonstrates security policies, RBAC, and hardening techniques
+**Base Modules (11 building blocks)**
+- namespace: Kubernetes namespace with labels and annotations
+- helm: Standardized Helm release deployment
+- values-template: Dynamic Helm values rendering
+- ingress: Ingress resource with TLS configuration
+- persistence: PersistentVolumeClaim management
+- credentials: Secret and ConfigMap handling
+- monitoring: ServiceMonitor and PodMonitor creation
+- istio-gateway: Istio Gateway resource
+- istio-virtualservice: Istio VirtualService routing
 
-- [**Demo Apps**](https://github.com/fullstack-pw/demo-apps): Collection of demonstration applications
-  - Various microservices showcasing different patterns
-  - Cloud-native application examples with full observability
-  - Multi-environment deployment configurations
+**Application Modules (24 complete solutions)**
 
-## 📦 Module Architecture
+Platform Infrastructure:
+- cert-manager, externaldns, external-secrets, argocd
+- istio, ingress-nginx, metallb
 
-The infrastructure follows a modular design with two categories:
+Observability:
+- observability (central hub), observability-box (edge collector)
+- fluent, otel-collector
 
-### Base Modules (Building Blocks)
-- **namespace**: Kubernetes namespace management
-- **helm**: Standardized Helm chart deployment
-- **values-template**: Template rendering for Helm values
-- **ingress**: Common ingress configuration
-- **persistence**: Volume management
-- **credentials**: Secret handling
-- **monitoring**: Prometheus/ServiceMonitor integration
+CI/CD:
+- github-runner (ARC), gitlab-runner
 
-### Application Modules (Complete Solutions)
-Built by composing base modules:
-- **cert-manager**, **externaldns**, **external-secrets**: Platform essentials
-- **observability** & **observability-box**: Monitoring stack
-- **github-runner** & **gitlab-runner**: CI/CD runners
-- **postgres**, **redis**, **nats**: Data services
-- **harbor**, **registry**, **minio**: Storage solutions
-- **immich**: Home media management
-- **kubevirt**: Virtualization platform
+Storage & Registry:
+- harbor, minio, longhorn
 
-## 🔄 GitOps & Secret Management
+Data Services:
+- postgres, redis, nats
 
-The platform uses a GitOps approach with encrypted secrets:
+Applications:
+- immich, kubevirt, terraform-state-backup
 
-- **SOPS with Age**: All secrets are encrypted in Git
-- **External Secrets**: Syncs secrets from Vault to Kubernetes
-- **Automated Workflows**: GitHub Actions for infrastructure changes
-- **Terraform State**: Stored in MinIO with S3 backend
+## Technologies & Tools
 
-## 🚧 Recent Enhancements
+**Infrastructure & Virtualization**
+- Proxmox VE, Terraform 1.10.5+, Ansible, cloud-init
 
-Recent improvements to the platform include:
+**Kubernetes Ecosystem**
+- K3s (lightweight), vanilla Kubernetes (HA), Talos Linux (immutable), KubeVirt (VMs)
+- ArgoCD 7.7.12, Helm, Kustomize, kubectl
 
-- **Custom GitHub Runner Image**: Enhanced with kubectl, Terraform, SOPS, and more
-- **USB Storage Integration**: External storage for Immich photo management
-- **KubeVirt Implementation**: VM management within Kubernetes
-- **Observability Hub-and-Spoke**: Centralized monitoring architecture
-- **Home Cluster**: Dedicated environment for home automation and media
+**Observability & Monitoring**
+- Prometheus (kube-prometheus-stack v79.0.1), Grafana
+- Jaeger v2.57.0, OpenTelemetry v0.33.0, Loki v6.28.0, Fluent Bit v0.48.9
+- ServiceMonitor, PodMonitor, PrometheusRule CRDs
 
-## 🌟 Technologies Used
+**Security & Compliance**
+- HashiCorp Vault, SOPS with age encryption, cert-manager
+- Istio service mesh, External Secrets Operator
+- Trivy, TruffleHog, RBAC, Vault policies
 
-The fullstack.pw platform leverages numerous technologies:
+**Networking & Service Mesh**
+- Istio, NGINX Ingress, HAProxy, MetalLB
+- External-DNS (Cloudflare + Pi-hole)
+- Cloudflare (DNS, CDN, WAF)
 
-- **Infrastructure**: Proxmox, Terraform, Ansible
-- **Containerization**: Docker, Kubernetes (K3s/K8s), KubeVirt
-- **CI/CD**: GitHub Actions, GitLab CI, Custom Docker images
-- **Observability**: Prometheus, Grafana, Jaeger, OpenTelemetry, Loki, Fluent Bit
-- **Security**: Vault, cert-manager, Trivy, SOPS
-- **Networking**: HAProxy, NGINX Ingress, MetalLB, ExternalDNS
-- **Storage**: MinIO, Harbor, Docker Registry, USB-attached storage
-- **Databases**: PostgreSQL (with pgvector), Redis, NATS
-- **Development**: Go, JavaScript/Node.js, Python
+**Storage Solutions**
+- MinIO S3, Harbor, Docker Registry
+- Longhorn distributed storage
+- USB-attached storage for home services
 
-## 📚 Documentation
+**Data & Messaging**
+- PostgreSQL 15 with pgvector extension
+- Redis (Bitnami charts)
+- NATS with JetStream streaming
 
-- Infrastructure diagrams: See [infra](https://github.com/fullstack-pw/infra) repository
-- Pipeline documentation: See [pipelines](https://github.com/fullstack-pw/pipelines) repository
-- Application specifications: See individual application repositories
-- Secret management guide: See [docs/SECRETS_EXTRACTION.md](https://github.com/fullstack-pw/infra/blob/main/docs/SECRETS_EXTRACTION.md)
+**CI/CD & Automation**
+- GitHub Actions with Actions Runner Controller
+- GitLab CI with self-hosted runners
+- Custom runner images with comprehensive tooling
+- Semantic versioning and conventional commits
 
-## 🤝 Contributing
+**Programming & Development**
+- Go (microservices with OTel instrumentation)
+- JavaScript/Node.js, Python
+- Dockerfile multi-stage builds
 
-This is a personal homelab project, but feel free to explore the code and use it as inspiration for your own infrastructure!
+## Documentation & Resources
+
+**Infrastructure Documentation**
+- [Infrastructure README](https://github.com/fullstack-pw/infra): Complete infrastructure overview
+
+**Application Documentation**
+- [Pipelines Documentation](https://github.com/fullstack-pw/pipelines): Reusable workflow specifications
+- [Demo Apps](https://github.com/fullstack-pw/demo-apps): Cloud-native application examples
+- [CKS Backend](https://github.com/fullstack-pw/cks-backend): CKS training platform backend implementation
+- [CKS Frontend](https://github.com/fullstack-pw/cks-frontend): CKS training platform web interface
+
+**Architecture Diagrams**
+- Network topology and cluster layout
+- Observability data flow architecture
+- CI/CD pipeline workflows
+- Secret management lifecycle
