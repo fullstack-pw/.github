@@ -25,14 +25,12 @@ The fullstack.pw organization encompasses a complete infrastructure and applicat
 - NODE01: Acer Nitro (i7-4710HQ, 16GB RAM)
 - NODE02: HP ED800 G3 Mini (i7-7700T, 32GB RAM) with USB-attached storage
 - NODE03: X99 dual Xeon E5-2699-V3 18-Core, 128GB RAM
-- Lenovo Legion: Personal laptop running ephemeral CI/CD runners
 
 **Virtualization**: Proxmox VE managing 10+ VMs across physical hosts with YAML-driven declarative provisioning
 
 ### Network Architecture
 
 - Cloudflare: DNS, CDN, and WAF for public-facing services with automatic DNS record management
-- HAProxy: Load balancer at k8s.fullstack.pw for vanilla Kubernetes traffic distribution
 - Pi-hole: Internal DNS server with ad-blocking for homelab name resolution
 - MetalLB: Bare metal load balancer for Kubernetes LoadBalancer service type
 - External-DNS: Automated DNS record lifecycle management with TXT ownership verification
@@ -54,9 +52,8 @@ The fullstack.pw organization encompasses a complete infrastructure and applicat
 ### Infrastructure & Platform
 
 **[infra](https://github.com/fullstack-pw/infra)**: Complete infrastructure-as-code repository
-- Terraform modules for Proxmox VM provisioning and Kubernetes workload deployment
+- Terraform modules for Proxmox VMs, cluster-api clusters, provisioning and Kubernetes workload deployment
 - Ansible playbooks for cluster bootstrapping (K3s, vanilla K8s, Talos Linux)
-- 35+ reusable Terraform modules (11 base + 24 application modules)
 - GitHub Actions workflows for automated infrastructure lifecycle
 - SOPS-encrypted secrets management with age encryption
 
@@ -94,6 +91,7 @@ The fullstack.pw organization encompasses a complete infrastructure and applicat
 
 | Component | Technology | Implementation |
 |-----------|-----------|----------------|
+| k8s Cluster Provisioning | Terraform + Cluster-api | Cluster-api manages cluster lifecycle |
 | VM Provisioning | Terraform + Proxmox | YAML-driven declarative VM definitions |
 | Configuration Management | Ansible | Idempotent playbooks with dynamic inventory |
 | State Management | Terraform + MinIO S3 | Remote state with workspace isolation |
