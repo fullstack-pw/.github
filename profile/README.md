@@ -6,14 +6,15 @@ Production-grade homelab platform demonstrating enterprise DevOps practices, clo
 
 The fullstack.pw organization encompasses a complete infrastructure and application ecosystem built on Kubernetes, implementing:
 
-- Multi-environment Kubernetes clusters with automated provisioning and lifecycle management
-- Infrastructure as Code with Terraform modular architecture and Ansible configuration management
-- GitOps-driven continuous deployment with ArgoCD and automated CI/CD pipelines
-- Comprehensive observability using Prometheus, Grafana, Jaeger, Loki, and OpenTelemetry
-- Self-hosted CI/CD infrastructure with GitHub Actions and GitLab runners
-- Defense-in-depth security with Vault, cert-manager, Istio service mesh, and SOPS encryption
-- Automated cluster bootstrapping via commit-triggered workflows
-- Hub-and-spoke telemetry architecture for centralized multi-cluster monitoring
+- **Multi-environment Kubernetes clusters** with Cluster API-based automated provisioning and lifecycle management
+- **Infrastructure as Code** with OpenTofu modular architecture (10 base + 32 application modules)
+- **GitOps-driven continuous deployment** with ArgoCD app-of-apps pattern and progressive delivery via Argo Rollouts
+- **Comprehensive observability** using Prometheus, Grafana, Jaeger, Loki, and OpenTelemetry with hub-and-spoke architecture
+- **Self-hosted CI/CD infrastructure** with GitHub Actions Runner Controller (ARC) and GitLab runners
+- **Defense-in-depth security** with Vault, cert-manager, Istio service mesh, SOPS encryption, and External Secrets Operator
+- **Automated cluster bootstrapping** via Cluster API on tools cluster (management cluster)
+- **Automated kubeconfig management** with SOPS encryption and Vault synchronization
+- **Progressive delivery pipelines** with automated E2E testing and blue-green deployments
 
 ## Architecture
 
@@ -37,25 +38,27 @@ The fullstack.pw organization encompasses a complete infrastructure and applicat
 
 ### Kubernetes Cluster Topology
 
-| Cluster | Distribution | Purpose | Infrastructure | Key Platform Components |
-|---------|--------------|---------|----------------|-------------------------|
-| dev | K3s | Development environment | k8s-dev | Istio service mesh, development workloads |
-| stg | K3s | Pre-production staging | k8s-stg | Staging validation, integration testing |
-| prod | K3s | Production services | k8s-prod | Production applications with HA |
-| tools | K3s | Platform infrastructure | k8s-tools | PostgreSQL, Redis, NATS, Vault, CI/CD runners |
-| home | K3s | Home automation | k8s-home | Immich photo management, media services |
-| observability | K3s | Central telemetry hub | k8s-observability | Prometheus, Grafana, Jaeger, Loki |
-| sandboxy | K3s | Experimental platform | k8s-sandbox | KubeVirt, Longhorn distributed storage |
+| Cluster | Distribution | Provisioning | Purpose | Infrastructure | Key Platform Components |
+|---------|--------------|--------------|---------|----------------|-------------------------|
+| dev | Talos Linux | Cluster API | Development environment | 1 CP + 2 workers (dynamic) | Istio service mesh, ArgoCD, development workloads |
+| prod | kubeadm | Cluster API | Production services | 1 CP + 2 workers (dynamic) | Istio service mesh, ArgoCD, production applications |
+| tools | K3s | Legacy Ansible | Platform infrastructure & Cluster API management cluster | k8s-tools (single node) | Cluster API operator, CloudNativePG, Redis, NATS, Vault, Harbor, MinIO, CI/CD runners (GitHub/GitLab) |
+| home | K3s | Legacy Ansible | Home automation | k8s-home (single node) | Immich photo management, External Secrets |
+| observability | K3s | Legacy Ansible | Central telemetry hub | k8s-observability (single node) | Prometheus, Grafana, Jaeger, Loki, OpenTelemetry Collector |
+| sandboxy | K3s | Legacy Ansible | CKS training platform | k8s-sandbox (single node) | KubeVirt for VM virtualization, Longhorn for snapshot-based storage, pool of standby VMs for instant CKS scenario provisioning |
+
+**Note**: dev and prod clusters are managed by Cluster API operator running on tools cluster. Talos provides immutable infrastructure, while kubeadm offers standard Kubernetes. Legacy clusters (tools, home, observability, sandboxy) provisioned via Proxmox/Ansible workflow.
 
 ## Repository Organization
 
 ### Infrastructure & Platform
 
 **[infra](https://github.com/fullstack-pw/infra)**: Complete infrastructure-as-code repository
-- Terraform modules for Proxmox VMs, cluster-api clusters, provisioning and Kubernetes workload deployment
-- Ansible playbooks for cluster bootstrapping (K3s, vanilla K8s, Talos Linux)
-- GitHub Actions workflows for automated infrastructure lifecycle
-- SOPS-encrypted secrets management with age encryption
+- OpenTofu modules (10 base + 32 application) for Kubernetes workload deployment
+- Cluster API integration for automated cluster provisioning (Talos Linux, kubeadm)
+- Ansible playbooks for legacy cluster bootstrapping (K3s clusters)
+- GitHub Actions workflows for automated infrastructure lifecycle with kubeconfig management
+- SOPS-encrypted secrets management with age encryption and Vault synchronization
 
 **[pipelines](https://github.com/fullstack-pw/pipelines)**: Centralized CI/CD workflows
 - Reusable GitHub Actions workflows for application deployment
@@ -91,11 +94,11 @@ The fullstack.pw organization encompasses a complete infrastructure and applicat
 
 | Component | Technology | Implementation |
 |-----------|-----------|----------------|
-| k8s Cluster Provisioning | Terraform + Cluster-api | Cluster-api manages cluster lifecycle |
-| VM Provisioning | Terraform + Proxmox | YAML-driven declarative VM definitions |
-| Configuration Management | Ansible | Idempotent playbooks with dynamic inventory |
-| State Management | Terraform + MinIO S3 | Remote state with workspace isolation |
-| Network Boot | PXE Boot Server | Rapid bare metal provisioning |
+| k8s Cluster Provisioning | Cluster API v1.12.0 + CAPMOX v0.7.5 | Tools cluster manages dev/prod cluster lifecycle on Proxmox |
+| VM Provisioning | OpenTofu + Proxmox | YAML-driven declarative VM definitions (legacy) |
+| Configuration Management | Ansible | Idempotent playbooks for legacy K3s clusters |
+| State Management | OpenTofu + MinIO S3 | Remote state with workspace isolation, daily backup to Oracle Cloud |
+| Kubeconfig Management | Automated via CI/CD | SOPS encryption, Cluster API secret extraction, Vault sync |
 
 ### Kubernetes Platform Services
 
@@ -169,7 +172,7 @@ Edge Prometheus → Remote Write → Central Prometheus → Grafana
 
 | Service | Technology | Purpose | Deployment |
 |---------|-----------|---------|------------|
-| PostgreSQL | PostgreSQL 15 with pgvector | Relational database with vector search | tools cluster |
+| PostgreSQL | CloudNativePG operator (PostgreSQL 15+ with pgvector) | Managed PostgreSQL with automated backups, roles, and credential export | tools, dev, prod clusters |
 | Redis | Bitnami Redis chart | Caching and session storage | tools cluster |
 | NATS | NATS with JetStream | Message broker and streaming | tools cluster |
 
@@ -190,12 +193,16 @@ Edge Prometheus → Remote Write → Central Prometheus → Grafana
 - Image pushing to Harbor/Docker Registry with SHA tagging
 
 **Deploy Stage**
-- Terraform plan on pull requests with parallel execution
-- Terraform apply on merge with path-based change detection
+- OpenTofu plan on pull requests with change detection
+- OpenTofu apply on merge with cluster change detection (before/after output comparison)
+- Automated Cluster API cluster provisioning on tools cluster
+- Cluster availability wait (30 minutes with polling)
+- Automated kubeconfig extraction and SOPS encryption
+- Git commit and Vault synchronization
 - Kustomize overlay selection based on environment
 - ArgoCD application sync with health checks
-- Progressive environment promotion (dev → stg → prod)
-- External Secrets synchronization from Vault
+- Progressive environment promotion (dev → prod) with Argo Rollouts
+- External Secrets synchronization from Vault to all clusters
 
 **Test Stage**
 - Infrastructure validation tests
@@ -205,22 +212,21 @@ Edge Prometheus → Remote Write → Central Prometheus → Grafana
 
 **Automation Workflows**
 
-10 GitHub Actions workflows:
-- terraform-plan.yml: Parallel plans for infrastructure changes
-- terraform-apply.yml: Automated infrastructure deployment
-- ansible.yml: VM provisioning via `[ansible PLAYBOOK]` commit tag
-- build.yml: Container image build and push
-- sec-trivy.yml: Vulnerability scanning
-- sec-trufflehog.yml: Secret leak detection
+7 GitHub Actions workflows:
+- opentofu.yml: Plan on PR, apply on merge with cluster change detection and kubeconfig automation
+- ansible.yml: Legacy cluster provisioning via `[ansible PLAYBOOK]` commit tag
+- build.yml: Container image build and push to Harbor registry
+- sec-trivy.yml: Container and IaC vulnerability scanning
+- sec-trufflehog.yml: Secret leak detection in commits
 - conventional-commits.yml: Commit message validation
-- release.yml: Semantic versioning and changelog
-- iac-tests.yml: Infrastructure validation
+- release.yml: Semantic versioning and changelog generation
 
 ## DevOps Practices Demonstrated
 
 **Infrastructure as Code**
-- Two-tier Terraform module architecture for composability and reusability
-- YAML-driven VM provisioning with dynamic resource creation
+- Two-tier OpenTofu module architecture (10 base + 32 application modules)
+- Cluster API-based cluster provisioning with automated kubeconfig management
+- YAML-driven VM provisioning with dynamic resource creation (legacy)
 - Automated state backup to Oracle Cloud Object Storage
 - Workspace-based environment isolation
 
@@ -246,10 +252,12 @@ Edge Prometheus → Remote Write → Central Prometheus → Grafana
 - Non-root container execution
 
 **Automation & Self-Service**
-- Single-commit VM-to-Kubernetes provisioning workflow
-- Automated cluster bootstrapping with kubeconfig integration
+- Cluster API-based automated cluster provisioning on Proxmox
+- Automated kubeconfig extraction, SOPS encryption, and Vault synchronization
+- Single-commit VM-to-Kubernetes provisioning workflow (legacy)
 - Self-healing via Kubernetes probes and ArgoCD sync
 - Automated DNS and certificate management
+- Progressive delivery with automated E2E testing and blue-green deployments
 
 **Resilience & Recovery**
 - Multi-cluster architecture for blast radius isolation
@@ -260,7 +268,7 @@ Edge Prometheus → Remote Write → Central Prometheus → Grafana
 
 ## Module Architecture
 
-**Base Modules (11 building blocks)**
+**Base Modules (10 building blocks)**
 - namespace: Kubernetes namespace with labels and annotations
 - helm: Standardized Helm release deployment
 - values-template: Dynamic Helm values rendering
@@ -270,37 +278,47 @@ Edge Prometheus → Remote Write → Central Prometheus → Grafana
 - monitoring: ServiceMonitor and PodMonitor creation
 - istio-gateway: Istio Gateway resource
 - istio-virtualservice: Istio VirtualService routing
+- cnpg-database: CloudNativePG database management
 
-**Application Modules (24 complete solutions)**
+**Application Modules (32 complete solutions)**
+
+Cluster Provisioning:
+- kubernetes-cluster (Talos, kubeadm, K3s, K0s, RKE2), clusterapi-operator
 
 Platform Infrastructure:
 - cert-manager, externaldns, external-secrets, argocd
-- istio, ingress-nginx, metallb
+- istio, ingress-nginx, metallb, kubelet-csr-approver, metrics-server, local-path-provisioner
 
 Observability:
 - observability (central hub), observability-box (edge collector)
-- fluent, otel-collector
 
 CI/CD:
 - github-runner (ARC), gitlab-runner
 
 Storage & Registry:
-- harbor, minio, longhorn
+- harbor, minio, longhorn, local-path-provisioner
 
 Data Services:
-- postgres, redis, nats
+- cloudnative-postgres, cloudnative-postgres-operator, redis, nats
 
-Applications:
-- immich, kubevirt, terraform-state-backup
+Security:
+- vault, teleport-agent, authentik
+
+Virtualization:
+- kubevirt, kubevirt-operator
+
+Other:
+- immich, registry, cluster-autoscaler, oracle-backup
 
 ## Technologies & Tools
 
 **Infrastructure & Virtualization**
-- Proxmox VE, Terraform 1.10.5+, Ansible, cloud-init
+- Proxmox VE, OpenTofu 1.11.3+, Ansible (legacy clusters), cloud-init
+- Cluster API v1.12.0 with CAPMOX v0.7.5 (Proxmox provider)
 
 **Kubernetes Ecosystem**
-- K3s (lightweight), vanilla Kubernetes (HA), Talos Linux (immutable), KubeVirt (VMs)
-- ArgoCD 7.7.12, Helm, Kustomize, kubectl
+- K3s (lightweight), kubeadm (standard multi-node), Talos Linux (immutable), KubeVirt (VMs)
+- ArgoCD 7.7.12, Argo Rollouts (progressive delivery), Helm, Kustomize, kubectl
 
 **Observability & Monitoring**
 - Prometheus (kube-prometheus-stack v79.0.1), Grafana
@@ -323,7 +341,7 @@ Applications:
 - USB-attached storage for home services
 
 **Data & Messaging**
-- PostgreSQL 15 with pgvector extension
+- CloudNativePG operator (PostgreSQL 15+ with pgvector, automated backups, managed roles)
 - Redis (Bitnami charts)
 - NATS with JetStream streaming
 
