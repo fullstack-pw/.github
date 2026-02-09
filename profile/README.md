@@ -68,13 +68,6 @@ The fullstack.pw organization encompasses a complete infrastructure and applicat
 
 ### Application Repositories
 
-**[demo-apps](https://github.com/fullstack-pw/demo-apps)**: Cloud-native microservices portfolio
-- Go-based microservices with OpenTelemetry instrumentation
-- Multi-environment Kustomize overlays (dev, stg, prod)
-- Full observability stack integration (metrics, logs, traces)
-- ArgoCD GitOps deployment manifests
-- Examples: writer, enqueuer, memorizer microservices
-
 **[cks-backend](https://github.com/fullstack-pw/cks-backend)**: CKS training platform backend
 - Go-based backend implementing cluster pool management for Kubernetes security training
 - KubeVirt integration for VM-based Kubernetes cluster provisioning
@@ -363,7 +356,6 @@ Other:
 
 **Application Documentation**
 - [Pipelines Documentation](https://github.com/fullstack-pw/pipelines): Reusable workflow specifications
-- [Demo Apps](https://github.com/fullstack-pw/demo-apps): Cloud-native application examples
 - [CKS Backend](https://github.com/fullstack-pw/cks-backend): CKS training platform backend implementation
 - [CKS Frontend](https://github.com/fullstack-pw/cks-frontend): CKS training platform web interface
 
